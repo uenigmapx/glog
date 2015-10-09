@@ -93,6 +93,7 @@ import (
 // should be modified only through the flag.Value interface. The values match
 // the corresponding constants in C++.
 type severity int32 // sync/atomic int32
+var outputSeverity severity
 
 // These constants identify the log levels in order of increasing severity.
 // A message written to a high-severity log file is also written to each
@@ -161,6 +162,14 @@ func severityByName(s string) (severity, bool) {
 		}
 	}
 	return 0, false
+}
+
+func SetLevelString(outputLevel string) {
+	severity, ok := severityByName(outputLevel)
+	if !ok {
+		panic(fmt.Errorf("cannot find severity name %s", outputLevel))
+	}
+	outputSeverity = severity
 }
 
 // OutputStats tracks the number of output lines and bytes written.
@@ -411,6 +420,9 @@ func init() {
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
 
+	//Default outputSeverity is INFO.
+	outputSeverity = infoLog
+
 	logging.setVState(0, nil, false)
 	go logging.flushDaemon()
 }
@@ -635,6 +647,9 @@ func (buf *buffer) someDigits(i, d int) int {
 }
 
 func (l *loggingT) println(s severity, args ...interface{}) {
+	if s < outputSeverity {
+		return
+	}
 	buf, file, line := l.header(s, 0)
 	fmt.Fprintln(buf, args...)
 	l.output(s, buf, file, line, false)
@@ -645,6 +660,9 @@ func (l *loggingT) print(s severity, args ...interface{}) {
 }
 
 func (l *loggingT) printDepth(s severity, depth int, args ...interface{}) {
+	if s < outputSeverity {
+		return
+	}
 	buf, file, line := l.header(s, depth)
 	fmt.Fprint(buf, args...)
 	if buf.Bytes()[buf.Len()-1] != '\n' {
@@ -654,6 +672,9 @@ func (l *loggingT) printDepth(s severity, depth int, args ...interface{}) {
 }
 
 func (l *loggingT) printf(s severity, format string, args ...interface{}) {
+	if s < outputSeverity {
+		return
+	}
 	buf, file, line := l.header(s, 0)
 	fmt.Fprintf(buf, format, args...)
 	if buf.Bytes()[buf.Len()-1] != '\n' {
@@ -666,6 +687,9 @@ func (l *loggingT) printf(s severity, format string, args ...interface{}) {
 // alsoLogToStderr is true, the log message always appears on standard error; it
 // will also appear in the log file unless --logtostderr is set.
 func (l *loggingT) printWithFileLine(s severity, file string, line int, alsoToStderr bool, args ...interface{}) {
+	if s < outputSeverity {
+		return
+	}
 	buf := l.formatHeader(s, file, line)
 	fmt.Fprint(buf, args...)
 	if buf.Bytes()[buf.Len()-1] != '\n' {

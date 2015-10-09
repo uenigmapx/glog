@@ -85,6 +85,21 @@ func setFlags() {
 	logging.toStderr = false
 }
 
+func TestOutputSeverity(t *testing.T) {
+	setFlags()
+	defer logging.swap(logging.newBuffers())
+	Debug("test")
+	if contains(debugLog, "test", t) {
+		t.Error("OutputSeverity failed")
+	}
+
+	SetLevelString("DEBUG")
+	Debug("test")
+	if !contains(debugLog, "test", t) {
+		t.Error("OutputSeverity failed")
+	}
+}
+
 // Test that Info works as advertised.
 func TestInfo(t *testing.T) {
 	setFlags()
@@ -95,63 +110,6 @@ func TestInfo(t *testing.T) {
 	}
 	if !contains(infoLog, "test", t) {
 		t.Error("Info failed")
-	}
-}
-
-// Test that Debug works as advertised.
-func TestDebug(t *testing.T) {
-	setFlags()
-	defer logging.swap(logging.newBuffers())
-	Debug("test")
-	if !contains(debugLog, "D", t) {
-		t.Errorf("Debug has wrong character: %q", contents(infoLog))
-	}
-	if !contains(debugLog, "test", t) {
-		t.Error("Debug failed")
-	}
-}
-
-func TestDebugDepth(t *testing.T) {
-	setFlags()
-	defer logging.swap(logging.newBuffers())
-
-	f := func() { DebugDepth(1, "depth-test1") }
-
-	// The next three lines must stay together
-	_, _, wantLine, _ := runtime.Caller(0)
-	DebugDepth(0, "depth-test0")
-	f()
-
-	msgs := strings.Split(strings.TrimSuffix(contents(debugLog), "\n"), "\n")
-	if len(msgs) != 2 {
-		t.Fatalf("Got %d lines, expected 2", len(msgs))
-	}
-
-	for i, m := range msgs {
-		if !strings.HasPrefix(m, "D") {
-			t.Errorf("DebugDepth[%d] has wrong character: %q", i, m)
-		}
-		w := fmt.Sprintf("depth-test%d", i)
-		if !strings.Contains(m, w) {
-			t.Errorf("DebugDepth[%d] missing %q: %q", i, w, m)
-		}
-
-		// pull out the line number (between : and ])
-		msg := m[strings.LastIndex(m, ":")+1:]
-		x := strings.Index(msg, "]")
-		if x < 0 {
-			t.Errorf("DebugDepth[%d]: missing ']': %q", i, m)
-			continue
-		}
-		line, err := strconv.Atoi(msg[:x])
-		if err != nil {
-			t.Errorf("DebugDepth[%d]: bad line number: %q", i, m)
-			continue
-		}
-		wantLine++
-		if wantLine != line {
-			t.Errorf("DebugDepth[%d]: got line %d, want %d", i, line, wantLine)
-		}
 	}
 }
 
