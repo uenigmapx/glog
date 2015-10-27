@@ -408,7 +408,6 @@ func init() {
 	flag.BoolVar(&logging.toStderr, "logtostderr", false, "log to standard error instead of files")
 	flag.BoolVar(&logging.dailyRolling, "dailyRolling", false, " weather to handle log files daily")
 	flag.BoolVar(&logging.alsoToStderr, "alsologtostderr", false, "log to standard error as well as files")
-	flag.DurationVar(&flushInterval, "flushInterval", 30*time.Second, "specify the interval to flush")
 	flag.Var(&logging.verbosity, "v", "log level for V logs")
 	flag.Var(&logging.stderrThreshold, "stderrthreshold", "logs at or above this threshold go to stderr")
 	flag.Var(&logging.vmodule, "vmodule", "comma-separated list of pattern=N settings for file-filtered logging")
@@ -914,7 +913,7 @@ func (l *loggingT) createFiles(sev severity) error {
 	return nil
 }
 
-var flushInterval = 30 * time.Second
+var flushInterval time.Duration = 5 * time.Second
 
 // flushDaemon periodically flushes the log file buffers.
 func (l *loggingT) flushDaemon() {
