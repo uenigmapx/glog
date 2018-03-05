@@ -101,16 +101,18 @@ var outputSeverity severity
 const (
 	debugLog severity = iota
 	infoLog
+	warningLog
 	errorLog
 	fatalLog
-	numSeverity = 4
+	numSeverity = 5
 )
 
-const severityChar = "DIEF"
+const severityChar = "DIWEF"
 
 var severityName = []string{
 	debugLog: "DEBUG",
 	infoLog:  "INFO",
+	warningLog: "WARNING",
 	errorLog: "ERROR",
 	fatalLog: "FATAL",
 }
@@ -164,14 +166,6 @@ func severityByName(s string) (severity, bool) {
 	return 0, false
 }
 
-func SetLevelString(outputLevel string) {
-	severity, ok := severityByName(outputLevel)
-	if !ok {
-		panic(fmt.Errorf("cannot find severity name %s", outputLevel))
-	}
-	outputSeverity = severity
-}
-
 // OutputStats tracks the number of output lines and bytes written.
 type OutputStats struct {
 	lines int64
@@ -191,12 +185,13 @@ func (s *OutputStats) Bytes() int64 {
 // Stats tracks the number of lines of output and number of bytes
 // per severity level. Values must be read with atomic.LoadInt64.
 var Stats struct {
-	Debug, Info, Error OutputStats
+	Debug, Info, Warning, Error OutputStats
 }
 
 var severityStats = [numSeverity]*OutputStats{
 	debugLog: &Stats.Debug,
 	infoLog:  &Stats.Info,
+	warningLog:  &Stats.Warning,
 	errorLog: &Stats.Error,
 }
 
@@ -647,6 +642,7 @@ func (buf *buffer) someDigits(i, d int) int {
 
 func (l *loggingT) println(s severity, args ...interface{}) {
 	if s < outputSeverity {
+		fmt.Printf("%d, not write in file\n", s)
 		return
 	}
 	buf, file, line := l.header(s, 0)
@@ -724,13 +720,16 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 		switch s {
 		case fatalLog:
 			l.file[fatalLog].Write(data)
-			fallthrough
+			//fallthrough
 		case errorLog:
 			l.file[errorLog].Write(data)
-			fallthrough
+			//fallthrough
+		case warningLog:
+			l.file[warningLog].Write(data)
+			//fallthrough
 		case infoLog:
 			l.file[infoLog].Write(data)
-			fallthrough
+			//fallthrough
 		case debugLog:
 			l.file[debugLog].Write(data)
 		}
@@ -886,7 +885,7 @@ func (sb *syncBuffer) rotateFile(now time.Time) error {
 	fmt.Fprintf(&buf, "Log file created at: %s\n", now.Format("2006/01/02 15:04:05"))
 	fmt.Fprintf(&buf, "Running on machine: %s\n", host)
 	fmt.Fprintf(&buf, "Binary: Built with %s %s for %s/%s\n", runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	fmt.Fprintf(&buf, "Log line format: [DIEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg\n")
+	fmt.Fprintf(&buf, "Log line format: [%s]mmdd hh:mm:ss.uuuuuu threadid file:line] msg\n", severityChar)
 	n, err := sb.file.Write(buf.Bytes())
 	sb.nbytes += uint64(n)
 	return err
@@ -1128,6 +1127,30 @@ func Infoln(args ...interface{}) {
 // Arguments are handled in the manner of fmt.Printf; a newline is appended if missing.
 func Infof(format string, args ...interface{}) {
 	logging.printf(infoLog, format, args...)
+}
+
+// Warning logs to the WARN log.
+// Arguments are handled in the manner of fmt.Print; a newline is appended if missing.
+func Warning(args ...interface{}) {
+	logging.print(warningLog, args...)
+}
+
+// WarningDepth acts as Warn but uses depth to determine which call frame to log.
+// WarnDepth(0, "msg") is the same as Warn("msg").
+func WarningDepth(depth int, args ...interface{}) {
+	logging.printDepth(warningLog, depth, args...)
+}
+
+// Warningln logs to the Warn log.
+// Arguments are handled in the manner of fmt.Println; a newline is appended if missing.
+func Warningln(args ...interface{}) {
+	logging.println(warningLog, args...)
+}
+
+// Warningf logs to the Warn log.
+// Arguments are handled in the manner of fmt.Printf; a newline is appended if missing.
+func Warningf(format string, args ...interface{}) {
+	logging.printf(warningLog, format, args...)
 }
 
 // Error logs to the ERROR, WARNING, and INFO logs.
