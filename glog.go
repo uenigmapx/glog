@@ -71,6 +71,7 @@
 package glog
 
 import (
+	"log"
 	"bufio"
 	"bytes"
 	"errors"
@@ -94,6 +95,20 @@ import (
 // the corresponding constants in C++.
 type severity int32 // sync/atomic int32
 var outputSeverity severity
+// the -logparticle flag is of particle size in rolling logfile
+type particle int32
+var logParticleStr string
+var logParticle = daily
+// the -logcompress flag is of compress method(zip/gzip/bzip2(todo)/none)
+type compress func(*os.File)
+var logCompressStr string
+var logCompress compress = compressNone
+
+// These constants the particle size levels of rolling logfile
+const (
+	daily 	particle = 5
+	monthly	particle = 3
+)
 
 // These constants identify the log levels in order of increasing severity.
 // A message written to a high-severity log file is also written to each
@@ -408,13 +423,15 @@ type flushSyncWriter interface {
 
 func init() {
 	flag.BoolVar(&logging.toStderr, "logtostderr", false, "log to standard error instead of files")
-	flag.BoolVar(&logging.dailyRolling, "dailyrolling", false, " weather to handle log files daily")
+	flag.BoolVar(&logging.rolling, "dailyrolling", false, " weather to handle log files daily")
 	flag.BoolVar(&logging.alsoToStderr, "alsologtostderr", false, "log to standard error as well as files")
 	flag.Var(&logging.verbosity, "v", "log level for V logs")
 	flag.Var(&logging.stderrThreshold, "stderrthreshold", "logs at or above this threshold go to stderr")
 	flag.Var(&logging.vmodule, "vmodule", "comma-separated list of pattern=N settings for file-filtered logging")
 	flag.Var(&logging.traceLocation, "log_backtrace_at", "when logging hits line file:N, emit a stack trace")
 	flag.Var(&outputSeverity, "outputseverity", "logs at or above this content go to log file")
+	flag.StringVar(&logParticleStr, "logparticle", "d", "particle size in cutting logfile (d/day--daily[default], m/month--monthly)")
+	flag.StringVar(&logCompressStr, "logcompress", "none", "compress method(zip/gzip/none[default])")
 
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
@@ -424,6 +441,25 @@ func init() {
 
 	logging.setVState(0, nil, false)
 	go logging.flushDaemon()
+}
+
+//SelfConfigure -- semantic-meaning's commandline argument Switch To real-meaning's variable
+// 语意化的命令行参数到实意的变量值
+func SelfConfigure() {
+	if logParticleStr == "m" || logParticleStr == "month" {
+		logParticle = 3
+	} else if logParticleStr != "d" && logParticleStr != "day" {
+		log.Fatalln("logparticle flag has wrong !")
+	}
+	if logCompressStr == "zip" {
+		logCompress = compressZip
+	} else if logCompressStr == "gzip" {
+		logCompress = compressGzip
+	} else if logCompressStr == "bzip2" {
+		logCompress = compressBzip2
+	} else if logCompressStr != "none" {
+		log.Fatalln("logcompress flag has wrong !")
+	}
 }
 
 // Flush flushes all pending log I/O.
@@ -439,7 +475,7 @@ type loggingT struct {
 	toStderr     bool // The -logtostderr flag.
 	alsoToStderr bool // The -alsologtostderr flag.
 
-	dailyRolling bool
+	rolling bool
 
 	// Level flag. Handled atomically.
 	stderrThreshold severity // The -stderrthreshold flag.
@@ -843,8 +879,8 @@ func (sb *syncBuffer) Sync() error {
 }
 
 func (sb *syncBuffer) Write(p []byte) (n int, err error) {
-	if logging.dailyRolling {
-		if sb.createdDate != string(p[1:5]) {
+	if logging.rolling {
+		if sb.createdDate != string(p[1:logParticle]) {
 			if err := sb.rotateFile(time.Now()); err != nil {
 				sb.logger.exit(err)
 			}
@@ -868,7 +904,7 @@ func (sb *syncBuffer) Write(p []byte) (n int, err error) {
 func (sb *syncBuffer) rotateFile(now time.Time) error {
 	if sb.file != nil {
 		sb.Flush()
-		sb.file.Close()
+		go logCompress(sb.file)
 	}
 	var err error
 	sb.file, _, err = create(severityName[sb.sev], now)

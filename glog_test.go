@@ -222,9 +222,9 @@ func TestError(t *testing.T) {
 		t.Error("Error failed")
 	}
 	str := contents(errorLog)
-	if !contains(warningLog, str, t) {
-		t.Error("Warning failed")
-	}
+	//if !contains(warningLog, str, t) {
+	//	t.Error("Warning failed")
+	//}
 	if !contains(infoLog, str, t) {
 		t.Error("Info failed")
 	}
@@ -236,21 +236,21 @@ func TestError(t *testing.T) {
 // Test that a Warning log goes to Info.
 // Even in the Info log, the source character will be W, so the data should
 // all be identical.
-func TestWarning(t *testing.T) {
-	setFlags()
-	defer logging.swap(logging.newBuffers())
-	Warning("test")
-	if !contains(warningLog, "W", t) {
-		t.Errorf("Warning has wrong character: %q", contents(warningLog))
-	}
-	if !contains(warningLog, "test", t) {
-		t.Error("Warning failed")
-	}
-	str := contents(warningLog)
-	if !contains(infoLog, str, t) {
-		t.Error("Info failed")
-	}
-}
+//func TestWarning(t *testing.T) {
+//	setFlags()
+//	defer logging.swap(logging.newBuffers())
+//	Warning("test")
+//	if !contains(warningLog, "W", t) {
+//		t.Errorf("Warning has wrong character: %q", contents(warningLog))
+//	}
+//	if !contains(warningLog, "test", t) {
+//		t.Error("Warning failed")
+//	}
+//	str := contents(warningLog)
+//	if !contains(infoLog, str, t) {
+//		t.Error("Info failed")
+//	}
+//}
 
 // Test that a V log goes to Info.
 func TestV(t *testing.T) {
