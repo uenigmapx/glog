@@ -132,6 +132,15 @@ var severityName = []string{
 	fatalLog: "FATAL",
 }
 
+//SetLevelString Setting loggingLevel internally
+func SetLevelString(outputLevel string) {
+	severity, ok := severityByName(outputLevel)
+	if !ok {
+		panic(fmt.Errorf("cannot find severity name %s", outputLevel))
+	}
+	outputSeverity = severity
+}
+
 //测试tag
 // get returns the value of the severity.
 func (s *severity) get() severity {
@@ -417,16 +426,16 @@ type flushSyncWriter interface {
 }
 
 func init() {
-	flag.BoolVar(&logging.toStderr, "logtostderr", false, "log to standard error instead of files")
-	flag.BoolVar(&logging.rolling, "dailyrolling", false, " weather to handle log files daily")
-	flag.BoolVar(&logging.alsoToStderr, "alsologtostderr", false, "log to standard error as well as files")
-	flag.Var(&logging.verbosity, "v", "log level for V logs")
-	flag.Var(&logging.stderrThreshold, "stderrthreshold", "logs at or above this threshold go to stderr")
-	flag.Var(&logging.vmodule, "vmodule", "comma-separated list of pattern=N settings for file-filtered logging")
-	flag.Var(&logging.traceLocation, "log_backtrace_at", "when logging hits line file:N, emit a stack trace")
-	flag.Var(&outputSeverity, "outputseverity", "logs at or above this content go to log file")
-	flag.StringVar(&logParticleStr, "logparticle", "d", "particle size in cutting logfile (d/day--daily[default], m/month--monthly)")
-	flag.StringVar(&logCompressStr, "logcompress", "none", "compress method(zip/gzip/none[default])")
+	flag.BoolVar(&logging.toStderr, "logtostderr", false, "记录到标准错误输出而不是文件(覆盖 alsoToStderr) <log to standard error instead of files(cover alsoToStderr)>")
+	flag.BoolVar(&logging.rolling, "rolling", false, "是否做按日(默认)或按月的文件切割 <weather to handle log files daily(default) or monthly>")
+	flag.BoolVar(&logging.alsoToStderr, "alsologtostderr", false, "同时输出到文件和标准输出 <log to standard error as well as files>")
+	flag.Var(&logging.verbosity, "v", "V 记录器的记录等级 <log level for V logs>")
+	flag.Var(&logging.stderrThreshold, "stderrthreshold", "输出该等级之上的到标准输出 <logs at or above this threshold go to stderr>")
+	flag.Var(&logging.vmodule, "vmodule", "文件过滤设置, 用 ',' 分隔 <comma-separated list of pattern=N settings for file-filtered logging>")
+	flag.Var(&logging.traceLocation, "log_backtrace_at", "当记录到 file:N , 则同时记录堆栈信息 <when logging hits line file:N, emit a stack trace>")
+	flag.Var(&outputSeverity, "outputseverity", "输出该等级之上的到记录文件 <logs at or above this content go to log file>")
+	flag.StringVar(&logParticleStr, "logparticle", "d", "切割文件时的颗粒度 <particle size in rolling logfile (d/day--daily[default], m/month--monthly)>")
+	flag.StringVar(&logCompressStr, "logcompress", "none", "压缩记录文件 <compress method(zip/gzip/none[default])>")
 
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
