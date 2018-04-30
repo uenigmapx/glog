@@ -8,9 +8,9 @@ glog
 2. 将日志等级由原来的INFO WARN ERROR FATAL改为DEBUG INFO ERROR FATAL
 3. 增加日志输出等级设置, 当日志信息等级低于输出等级时则不输出日志信息
 4. 将默认的刷新缓冲区时间由 20s 改为 5s
+6. 让不同的输出级别只输出到各自的日志中
 5. 添加日志分割颗粒度(-logparticle), 默认按日切割(d/day[default] -- 按日切割, m/month 按月切割)
 6. 添加日志压缩选项(-logcompress), 默认无压缩(none[default]/zip/gzip/bzip2)
-
 
 ##使用示例
 ```go
