@@ -12,7 +12,7 @@ glog
 5. 添加日志分割颗粒度(-logparticle), 默认按日切割(d/day[default] -- 按日切割, m/month 按月切割)
 6. 添加日志压缩选项(-logcompress), 默认无压缩(none[default]/zip/gzip/bzip2)
 
-##使用示例
+## 使用示例
 ```go
 func main() {
     //初始化命令行参数
@@ -38,9 +38,9 @@ func main() {
 
 启动时指定
 log_dir 参数将日志文件保存到特定的目录
-dailyrolling 启动日切割日志选项
+rolling 启动日切割日志选项
 outputseverity 设置日志文件记录基准
 
 ```bash
-./demo --log_dir=./log --dailyrolling=true -outputseverity=DEBUG
+./demo -log_dir=./log -rolling=true -outputseverity=DEBUG
 ```
