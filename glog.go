@@ -450,20 +450,23 @@ func init() {
 //SelfConfigure -- semantic-meaning's commandline argument Switch To real-meaning's variable
 // 语意化的命令行参数到实意的变量值
 func SelfConfigure() {
-	if logParticleStr == "m" || logParticleStr == "month" {
-		logParticle = 3
-	} else if logParticleStr != "d" && logParticleStr != "day" {
-		log.Fatalln("logparticle flag has wrong !")
-	}
-	if logCompressStr == "zip" {
-		logCompress = compressZip
-	} else if logCompressStr == "gzip" {
-		logCompress = compressGzip
-	} else if logCompressStr == "bzip2" {
-		logCompress = compressBzip2
-	} else if logCompressStr != "none" {
-		log.Fatalln("logcompress flag has wrong !")
-	}
+	once := &sync.Once{}
+	once.Do(func() {
+		if logParticleStr == "m" || logParticleStr == "month" {
+			logParticle = 3
+		} else if logParticleStr != "d" && logParticleStr != "day" {
+			log.Fatalln("logparticle flag has wrong !")
+		}
+		if logCompressStr == "zip" {
+			logCompress = compressZip
+		} else if logCompressStr == "gzip" {
+			logCompress = compressGzip
+		} else if logCompressStr == "bzip2" {
+			logCompress = compressBzip2
+		} else if logCompressStr != "none" {
+			log.Fatalln("logcompress flag has wrong !")
+		}
+	})
 }
 
 // Flush flushes all pending log I/O.
