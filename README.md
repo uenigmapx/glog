@@ -6,7 +6,8 @@ glog
 ## 修改
 
 1. 增加每天切割日志文件的功能,程序运行时指定 --dailyRolling=true参数即可
-2. 将日志等级由原来的INFO WARN ERROR FATAL改为DEBUG INFO ERROR FATAL
+2. ~~将日志等级由原来的INFO WARN ERROR FATAL改为DEBUG INFO ERROR FATAL~~
+2. 将日志等级修改到 DEBUG INFO WARN ERROR FATAL, 同时日志输出只有 DEBUG 到 ERROR, FATAL 不输出到日志文件
 3. 增加日志输出等级设置, 当日志信息等级低于输出等级时则不输出日志信息
 4. 将默认的刷新缓冲区时间由 20s 改为 5s
 5. 让不同的输出级别只输出到各自的日志中
