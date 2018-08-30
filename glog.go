@@ -71,13 +71,13 @@
 package glog
 
 import (
-	"log"
 	"bufio"
 	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	stdLog "log"
 	"os"
 	"path/filepath"
@@ -95,19 +95,23 @@ import (
 // the corresponding constants in C++.
 type severity int32 // sync/atomic int32
 var outputSeverity severity
+
 // the -logparticle flag is of particle size in rolling logfile
 type particle int32
+
 var logParticleStr string
 var logParticle = daily
+
 // the -logcompress flag is of compress method(zip/gzip/bzip2(todo)/none)
 type compress func(*os.File)
+
 var logCompressStr string
 var logCompress compress = compressNone
 
 // These constants the particle size levels of rolling logfile
 const (
-	daily 	particle = 5
-	monthly	particle = 3
+	daily   particle = 5
+	monthly particle = 3
 )
 
 // These constants identify the log levels in order of increasing severity.
@@ -125,11 +129,11 @@ const (
 const severityChar = "DIWEF"
 
 var severityName = []string{
-	debugLog: "DEBUG",
-	infoLog:  "INFO",
+	debugLog:   "DEBUG",
+	infoLog:    "INFO",
 	warningLog: "WARNING",
-	errorLog: "ERROR",
-	fatalLog: "FATAL",
+	errorLog:   "ERROR",
+	fatalLog:   "FATAL",
 }
 
 //SetLevelString Setting loggingLevel internally
@@ -213,10 +217,10 @@ var Stats struct {
 }
 
 var severityStats = [numSeverity]*OutputStats{
-	debugLog: &Stats.Debug,
-	infoLog:  &Stats.Info,
-	warningLog:  &Stats.Warning,
-	errorLog: &Stats.Error,
+	debugLog:   &Stats.Debug,
+	infoLog:    &Stats.Info,
+	warningLog: &Stats.Warning,
+	errorLog:   &Stats.Error,
 }
 
 // Level is exported because it appears in the arguments to V and is
