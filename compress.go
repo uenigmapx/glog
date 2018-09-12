@@ -1,9 +1,9 @@
 package glog
 
 import (
-	"archive/zip"
 	"archive/tar"
-	//"compress/bzip2"
+	"archive/zip"
+	// "compress/bzip2"
 	"compress/gzip"
 	"io"
 	"os"
@@ -14,8 +14,22 @@ func compressNone(src *os.File) {
 }
 
 func compressZip(src *os.File) {
+	// 压缩文件
+	srcInfo, err := src.Stat()
+	if err != nil {
+		return
+	}
+
+	header, err := zip.FileInfoHeader(srcInfo)
+	if err != nil {
+		return
+	}
+	srcName := header.Name
+
+	defer os.Remove(srcName) // del source file
 	defer src.Close()
-	f, err := os.Create(src.Name()+".zip")
+
+	f, err := os.Create(srcName + ".zip")
 	if err != nil {
 		return
 	}
@@ -23,16 +37,19 @@ func compressZip(src *os.File) {
 	w := zip.NewWriter(f)
 	defer w.Close()
 
-	fi, err := w.Create(src.Name())
+	writer, err := w.CreateHeader(header)
 	if err != nil {
 		return
 	}
-	io.Copy(fi, src) // src to zip buffer file
+	io.Copy(writer, src) // src to zip buffer file
 }
 
 func compressGzip(src *os.File) {
+	srcName := src.Name()
+	defer os.Remove(srcName) // del source file
 	defer src.Close()
-	f, err := os.Create(src.Name()+".tar.gz")
+
+	f, err := os.Create(srcName + ".tar.gz")
 	if err != nil {
 		return
 	}
@@ -43,23 +60,26 @@ func compressGzip(src *os.File) {
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 
-	finfo, err := os.Stat(src.Name())
+	finfo, err := os.Stat(srcName)
 	if err != nil {
 		return
 	}
-	h := &tar.Header {
-		Name: finfo.Name(),
-		Size: finfo.Size(),
-		Mode: int64(finfo.Mode()),
+	h := &tar.Header{
+		Name:    finfo.Name(),
+		Size:    finfo.Size(),
+		Mode:    int64(finfo.Mode()),
 		ModTime: finfo.ModTime(),
 	}
 	err = tw.WriteHeader(h)
-	if err !=nil {
+	if err != nil {
 		return
 	}
 	io.Copy(tw, src)
 }
 
+// TODO: 未完成 -.-
 func compressBzip2(src *os.File) {
+	// srcName := src.Name()
+	// defer os.Remove(srcName) // del source file
 	defer src.Close()
 }
