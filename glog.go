@@ -920,6 +920,11 @@ func (sb *syncBuffer) Write(p []byte) (n int, err error) {
 func (sb *syncBuffer) rotateFile(now time.Time) error {
 	if sb.file != nil {
 		sb.Flush()
+		// 把未压缩的文件添加到待压缩列表
+		if logCountPerCompress > 0 {
+			uncompresses <- sb.file.Name()
+		}
+		sb.file.Close()
 	}
 	var err error
 	sb.file, _, err = create(severityName[sb.sev], now)

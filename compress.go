@@ -17,7 +17,7 @@ import (
 type compress func([]string)
 
 var logCompress compress = compressNone
-var uncompresses chan<- []string
+var uncompresses chan<- string
 
 // String is part of the flag.Value interface. how to `String`
 func (c *compress) String() string {
@@ -67,10 +67,11 @@ func (c *countPerCompress) Set(value string) error {
 
 // timely detection of uncompressed logs and archiving
 func detectUncompressed() {
-	// 未压缩文件列表
+	// 待压缩文件列表
 	var uncompressList []string
-	// 传过来的未压缩文件
-	var uncompress chan []string
+	// 传过来的待压缩文件通道
+	// 预设 8 个缓冲区
+	uncompress := make(chan string, 8)
 	var mu sync.Mutex
 	// init
 	// normal update
@@ -79,7 +80,7 @@ func detectUncompressed() {
 		select {
 		case once := <-uncompress:
 			mu.Lock()
-			uncompressList = append(uncompressList, once...)
+			uncompressList = append(uncompressList, once)
 			if logCountPerCompress < 1 ||
 				countPerCompress(len(uncompressList)) < logCountPerCompress {
 				continue
