@@ -77,7 +77,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	stdLog "log"
 	"os"
 	"path/filepath"
@@ -95,24 +94,6 @@ import (
 // the corresponding constants in C++.
 type severity int32 // sync/atomic int32
 var outputSeverity severity
-
-// the -logparticle flag is of particle size in rolling logfile
-type particle int32
-
-var logParticleStr string
-var logParticle = daily
-
-// the -logcompress flag is of compress method(zip/gzip/bzip2(todo)/none)
-type compress func(*os.File)
-
-var logCompressStr string
-var logCompress compress = compressNone
-
-// These constants the particle size levels of rolling logfile
-const (
-	daily   particle = 5
-	monthly particle = 3
-)
 
 // These constants identify the log levels in order of increasing severity.
 // A message written to a high-severity log file is also written to each
@@ -422,6 +403,34 @@ func (t *traceLocation) Set(value string) error {
 	return nil
 }
 
+// the `-logparticle` flag is of particle size in rolling logfile
+type particle int32
+
+var logParticle particle
+
+// These constants the particle size levels of rolling logfile
+const (
+	daily   particle = 5
+	monthly particle = 3
+)
+
+// String is part of the flag.Value interface.
+func (p *particle) String() string {
+	return fmt.Sprintf("%d", *p)
+}
+
+// Get is part of the flag.Value interface.
+func (p *particle) Set(value string) error {
+	if value == "m" || value == "month" {
+		*p = monthly
+	} else if value == "d" || value == "day" || value == "" {
+		*p = daily
+	} else {
+		return fmt.Errorf("logparticle flag has wrong: '%v'", value)
+	}
+	return nil
+}
+
 // flushSyncWriter is the interface satisfied by logging destinations.
 type flushSyncWriter interface {
 	Flush() error
@@ -438,8 +447,8 @@ func init() {
 	flag.Var(&logging.vmodule, "vmodule", "文件过滤设置, 用 ',' 分隔 <comma-separated list of pattern=N settings for file-filtered logging>")
 	flag.Var(&logging.traceLocation, "log_backtrace_at", "当记录到 file:N , 则同时记录堆栈信息 <when logging hits line file:N, emit a stack trace>")
 	flag.Var(&outputSeverity, "outputseverity", "输出该等级之上的到记录文件 <logs at or above this content go to log file>")
-	flag.StringVar(&logParticleStr, "logparticle", "d", "切割文件时的颗粒度 <particle size in rolling logfile (d/day--daily[default], m/month--monthly)>")
-	flag.StringVar(&logCompressStr, "logcompress", "none", "压缩记录文件 <compress method(zip/gzip/none[default])>")
+	flag.Var(&logParticle, "logparticle", "切割文件时的颗粒度 <particle size in rolling logfile (d/day--daily[default], m/month--monthly)>")
+	flag.Var(&logCompress, "logcompress", "压缩记录文件 <compress method(zip/gzip/none[default])>")
 
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
@@ -451,25 +460,15 @@ func init() {
 	go logging.flushDaemon()
 }
 
-//SelfConfigure -- semantic-meaning's commandline argument Switch To real-meaning's variable
+// 配置的初始化, 因为有些需要先执行 flag.Parse, 把它放到 init ?
+var configOnce sync.Once
+
+//Configure -- semantic-meaning's commandline argument Switch To real-meaning's variable
 // 语意化的命令行参数到实意的变量值
-func SelfConfigure() {
-	once := &sync.Once{}
-	once.Do(func() {
-		if logParticleStr == "m" || logParticleStr == "month" {
-			logParticle = 3
-		} else if logParticleStr != "d" && logParticleStr != "day" {
-			log.Fatalln("logparticle flag has wrong !")
-		}
-		if logCompressStr == "zip" {
-			logCompress = compressZip
-		} else if logCompressStr == "gzip" {
-			logCompress = compressGzip
-		} else if logCompressStr == "bzip2" {
-			logCompress = compressBzip2
-		} else if logCompressStr != "none" {
-			log.Fatalln("logcompress flag has wrong !")
-		}
+func Configure() {
+	configOnce.Do(func() {
+		flag.Parse()
+		go detectUncompressed()
 	})
 }
 
@@ -919,7 +918,6 @@ func (sb *syncBuffer) Write(p []byte) (n int, err error) {
 func (sb *syncBuffer) rotateFile(now time.Time) error {
 	if sb.file != nil {
 		sb.Flush()
-		go logCompress(sb.file)
 	}
 	var err error
 	sb.file, _, err = create(severityName[sb.sev], now)
