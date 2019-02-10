@@ -211,6 +211,8 @@ func TestHeader(t *testing.T) {
 // Test that an Error log goes to Warning and Info.
 // Even in the Info log, the source character will be E, so the data should
 // all be identical.
+// NOTICE: 该测试不可用, 目前各个级别的 content 是各自归类到各自级别的 log 里面
+// 低级别的 log 不会再包含高级别的 content (example: debug -- error)
 func TestError(t *testing.T) {
 	setFlags()
 	defer logging.swap(logging.newBuffers())
@@ -221,16 +223,16 @@ func TestError(t *testing.T) {
 	if !contains(errorLog, "test", t) {
 		t.Error("Error failed")
 	}
-	str := contents(errorLog)
+	// str := contents(errorLog)
 	//if !contains(warningLog, str, t) {
 	//	t.Error("Warning failed")
 	//}
-	if !contains(infoLog, str, t) {
-		t.Error("Info failed")
-	}
-	if !contains(debugLog, str, t) {
-		t.Error("Debug failed")
-	}
+	// if !contains(infoLog, str, t) {
+	// 	t.Error("Info failed")
+	// }
+	// if !contains(debugLog, str, t) {
+	// 	t.Error("Debug failed")
+	// }
 }
 
 // Test that a Warning log goes to Info.
