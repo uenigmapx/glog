@@ -212,7 +212,7 @@ func TestHeader(t *testing.T) {
 // Even in the Info log, the source character will be E, so the data should
 // all be identical.
 // NOTICE: 该测试不可用, 目前各个级别的 content 是各自归类到各自级别的 log 里面
-// 低级别的 log 不会再包含高级别的 content (example: debug -- error)
+// 低级别的 log 不会再包含高级别的 content(反之亦然)(exam: debug -X- error)
 func TestError(t *testing.T) {
 	setFlags()
 	defer logging.swap(logging.newBuffers())
