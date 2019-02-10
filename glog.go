@@ -450,7 +450,7 @@ func init() {
 	flag.Var(&outputSeverity, "outputseverity", "输出该等级之上的到记录文件 <logs at or above this content go to log file>")
 	flag.Var(&logParticle, "logparticle", "切割文件时的颗粒度 <particle size in rolling logfile (d/day--daily[default], m/month--monthly)>")
 	flag.Var(&logCompress, "logcompress", "压缩记录文件 <compress method(zip/gzip/none[default])>")
-	flag.Var(&logCountPerCompress, "logcountpercompress", "执行压缩需要的`最少`文件数<default is 0>")
+	flag.Var(&logCountPerCompress, "logcountpercompress", "执行压缩需要的'最少'文件数<default is 0>")
 
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog

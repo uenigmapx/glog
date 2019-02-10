@@ -13,6 +13,7 @@ glog
 5. 让不同的输出级别只输出到各自的日志中
 6. 添加日志分割颗粒度(-logparticle), 默认按日切割(d/day[default] -- 按日切割, m/month 按月切割)
 7. 添加日志压缩选项(-logcompress), 默认无压缩(none[default]/zip/gzip/bzip2)
+8. 添加压缩标准, 当前以 文件数 关联, 开启后超过一定的文件数会自动压缩归档(TODO: 按照 log 文件名进行归档)
 
 ## 使用示例
 
@@ -24,7 +25,8 @@ func main() {
     defer glog.Flush()
 
     // 解析后处理
-    glog.SelfConfigure()
+    // 该方法已经包含 flag.Parse(), 因此可以选择注释上面的 flag.Parse()
+    glog.Configure()
 
     /* 丢弃了该修改方法, 修改到 severity 的 flag.Value 方法上
     //一般在测试环境下设置输出等级为DEBUG，线上环境设置为INFO
@@ -57,6 +59,8 @@ func main() {
     	If non-empty, write log files in this directory
   -logcompress string
     	压缩记录文件 <compress method(zip/gzip/none[default])> (default "none")
+  -logcountpercompress value
+        执行压缩需要的'最少'文件数<default is 0>
   -logparticle string
     	切割文件时的颗粒度 <particle size in rolling logfile (d/day--daily[default], m/month--monthly)> (default "d")
   -logtostderr
