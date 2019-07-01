@@ -695,7 +695,6 @@ func (buf *buffer) someDigits(i, d int) int {
 
 func (l *loggingT) println(s severity, args ...interface{}) {
 	if s < outputSeverity {
-		fmt.Printf("%d, not write in file\n", s)
 		return
 	}
 	buf, file, line := l.header(s, 0)
