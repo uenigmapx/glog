@@ -444,7 +444,7 @@ func init() {
 	flag.BoolVar(&logging.rolling, "rolling", false, "是否做按日(默认)或按月的文件切割 <weather to handle log files daily(default) or monthly>")
 	flag.BoolVar(&logging.alsoToStderr, "alsologtostderr", false, "同时输出到文件和标准错误 stderr <log to standard error as well as files>")
 	flag.Var(&logging.verbosity, "v", "V 记录器的记录等级 <log level for V logs>")
-	flag.Var(&logging.stderrThreshold, "stderrthreshold", "输出该等级之上的到标准 stderr <logs at or above this threshold go to stderr>")
+	flag.Var(&logging.stderrThreshold, "stderrthreshold", "输出该等级之上的到标准错误 stderr <logs at or above this threshold go to stderr>")
 	flag.Var(&logging.vmodule, "vmodule", "文件过滤设置, 用 ',' 分隔 <comma-separated list of pattern=N settings for file-filtered logging>")
 	flag.Var(&logging.traceLocation, "log_backtrace_at", "当记录到 file:N , 则同时记录堆栈信息 <when logging hits line file:N, emit a stack trace>")
 	flag.Var(&outputSeverity, "outputseverity", "输出该等级之上的到记录文件 <logs at or above this content go to log file>")
