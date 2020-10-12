@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	// "time"
 )
 
 // the -logcompress flag is of compress method(zip/gzip/bzip2(todo)/none)
