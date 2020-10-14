@@ -73,10 +73,12 @@ package glog
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	stdLog "log"
 	"os"
 	"path/filepath"
@@ -117,7 +119,7 @@ var severityName = []string{
 	fatalLog:   "FATAL",
 }
 
-//SetLevelString Setting loggingLevel internally
+// SetLevelString Setting loggingLevel internally
 func SetLevelString(outputLevel string) {
 	severity, ok := severityByName(outputLevel)
 	if !ok {
@@ -126,7 +128,7 @@ func SetLevelString(outputLevel string) {
 	outputSeverity = severity
 }
 
-//测试tag
+// 测试tag
 // get returns the value of the severity.
 func (s *severity) get() severity {
 	return severity(atomic.LoadInt32((*int32)(s)))
@@ -160,7 +162,7 @@ func (s *severity) Set(value string) error {
 		}
 		threshold = severity(v)
 	}
-	//logging.stderrThreshold.set(threshold)
+	// logging.stderrThreshold.set(threshold)
 	*s = threshold
 	return nil
 }
@@ -439,6 +441,34 @@ type flushSyncWriter interface {
 	io.Writer
 }
 
+var logConfig struct {
+	ErrorLevel severity `json:"error_level,omitempty"`
+	LogDir     string   `json:"log_dir,omitempty"`
+	KeepBig    bool     `json:"keep_big,omitempty"`
+}
+
+func loadConfig() {
+	bs, err := ioutil.ReadFile("log.json")
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &logConfig)
+	if err != nil {
+		return
+	}
+
+	if logConfig.ErrorLevel < numSeverity && logConfig.ErrorLevel > 0 {
+		logging.stderrThreshold = logConfig.ErrorLevel - 1
+	}
+
+	if logConfig.LogDir != "" {
+		*logDir = logConfig.LogDir
+	}
+
+	logging.keepBigFile = !logConfig.KeepBig
+}
+
 func init() {
 	flag.BoolVar(&logging.toStderr, "logtostderr", false, "记录到标准错误 stderr 而不是文件(覆盖 -alsologtostderr) <log to standard error instead of files(cover alsoToStderr)>")
 	flag.BoolVar(&logging.rolling, "rolling", false, "是否做按日(默认)或按月的文件切割 <weather to handle log files daily(default) or monthly>")
@@ -451,25 +481,27 @@ func init() {
 	flag.Var(&logParticle, "logparticle", "切割文件时的颗粒度 <particle size in rolling logfile (d/day--daily[default], m/month--monthly)>")
 	flag.Var(&logCompress, "logcompress", "压缩记录文件 <compress method(zip/gzip/none[default])>")
 	flag.Var(&logCountPerCompress, "logcountpercompress", "执行压缩需要的'最少'文件数<default is 0>")
+	flag.BoolVar(&logging.keepBigFile, "keepbig", false, "是否保留过大的日志（超过100MB）(false[default],true)")
 
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
 
-	//Default outputSeverity is INFO.
+	// Default outputSeverity is INFO.
 	outputSeverity = infoLog
+
+	loadConfig()
 
 	logging.setVState(0, nil, false)
 	go logging.flushDaemon()
 }
 
-// 配置的初始化, 因为有些需要先执行 flag.Parse, 把它放到 init ?
+// 配置的初始化
 var configOnce sync.Once
 
-//Configure -- semantic-meaning's commandline argument Switch To real-meaning's variable
+// Configure -- semantic-meaning's commandline argument Switch To real-meaning's variable
 // 语意化的命令行参数到实意的变量值
 func Configure() {
 	configOnce.Do(func() {
-		flag.Parse()
 		go detectUncompressed()
 	})
 }
@@ -519,6 +551,9 @@ type loggingT struct {
 	// safely using atomic.LoadInt32.
 	vmodule   moduleSpec // The state of the -vmodule flag.
 	verbosity Level      // V logging level, the value of the -v flag/
+
+	// keepBigFile is the state whether to keep big file
+	keepBigFile bool
 }
 
 // buffer holds a byte Buffer for reuse. The zero value is ready for use.
@@ -755,9 +790,10 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 	}
 	data := buf.Bytes()
 	if !flag.Parsed() {
-		os.Stderr.Write([]byte("ERROR: logging before flag.Parse: "))
-		os.Stderr.Write(data)
-	} else if l.toStderr {
+		os.Stderr.Write([]byte("ERROR: logging before flag.Parse: use default way to log"))
+	}
+
+	if l.toStderr {
 		os.Stderr.Write(data)
 	} else {
 		if alsoToStderr || l.alsoToStderr || s >= l.stderrThreshold.get() {
@@ -772,16 +808,16 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 		switch s {
 		case fatalLog:
 			l.file[fatalLog].Write(data)
-			//fallthrough
+			// fallthrough
 		case errorLog:
 			l.file[errorLog].Write(data)
-			//fallthrough
+			// fallthrough
 		case warningLog:
 			l.file[warningLog].Write(data)
-			//fallthrough
+			// fallthrough
 		case infoLog:
 			l.file[infoLog].Write(data)
-			//fallthrough
+			// fallthrough
 		case debugLog:
 			l.file[debugLog].Write(data)
 		}
@@ -903,6 +939,13 @@ func (sb *syncBuffer) Write(p []byte) (n int, err error) {
 	}
 
 	if sb.nbytes+uint64(len(p)) >= MaxSize {
+		if !logging.keepBigFile {
+			// 当日志文件过大的时候，删除文件，并重新创建新文件
+			sb.file.Close()
+			os.Remove(sb.file.Name())
+			sb.file = nil
+		}
+
 		if err := sb.rotateFile(time.Now()); err != nil {
 			sb.logger.exit(err)
 		}
@@ -938,8 +981,13 @@ func (sb *syncBuffer) rotateFile(now time.Time) error {
 
 	// Write header.
 	var buf bytes.Buffer
+	// 当flag未初始化时，利用默认参数初始化，而不是直接退出，这里提示是否初始化flag
+	if !flag.Parsed() {
+		fmt.Fprintln(&buf, "flag is not parse")
+	}
+
 	fmt.Fprintf(&buf, "Log file created at: %s\n", now.Format("2006/01/02 15:04:05"))
-	fmt.Fprintf(&buf, "Running on machine: %s\n", host)
+	// fmt.Fprintf(&buf, "Running on machine: %s\n", host)
 	fmt.Fprintf(&buf, "Binary: Built with %s %s for %s/%s\n", runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	fmt.Fprintf(&buf, "Log line format: [%s]mmdd hh:mm:ss.uuuuuu threadid file:line] msg\n", severityChar)
 	n, err := sb.file.Write(buf.Bytes())
@@ -975,7 +1023,7 @@ var flushInterval time.Duration = 5 * time.Second
 
 // flushDaemon periodically flushes the log file buffers.
 func (l *loggingT) flushDaemon() {
-	for _ = range time.NewTicker(flushInterval).C {
+	for range time.NewTicker(flushInterval).C {
 		l.lockAndFlushAll()
 	}
 }

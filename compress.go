@@ -20,7 +20,7 @@ var uncompresses chan<- string
 
 // String is part of the flag.Value interface. how to `String`
 func (c *compress) String() string {
-	return fmt.Sprintf("%d", *c)
+	return fmt.Sprint(*c)
 }
 
 // Get is part of the flag.Value interface.

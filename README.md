@@ -14,6 +14,9 @@ glog
 6. 添加日志分割颗粒度(-logparticle), 默认按日切割(d/day[default] -- 按日切割, m/month 按月切割)
 7. 添加日志压缩选项(-logcompress), 默认无压缩(none[default]/zip/gzip/bzip2)
 8. 添加压缩标准(-logcountpercompress), 当前以 文件数 关联, 开启后超过一定的文件数会自动压缩归档(TODO: 按照 log 文件名进行归档)
+9. 当日志过大时清空日志，防止占满硬盘空间，可通过选项(--keepbig)，可选为(true,false[default])
+10. 未使用flag.Parse()时，提示并保持文件输出
+11. 可通过(log.json)配置(log_dir,error_level,keep_big)
 
 ## 使用示例
 

@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -31,7 +30,7 @@ import (
 )
 
 // MaxSize is the maximum size of a log file in bytes.
-var MaxSize uint64 = 1024 * 1024 * 1800
+var MaxSize uint64 = 1024 * 1024 * 100
 
 // logDirs lists the candidate directories for new log files.
 var logDirs []string
@@ -48,25 +47,25 @@ func createLogDirs() {
 }
 
 var (
-	pid      = os.Getpid()
-	program  = filepath.Base(os.Args[0])
-	host     = "unknownhost"
-	userName = "unknownuser"
+	pid     = os.Getpid()
+	program = filepath.Base(os.Args[0])
+	// host     = "unknownhost"
+	// userName = "unknownuser"
 )
 
 func init() {
-	h, err := os.Hostname()
-	if err == nil {
-		host = shortHostname(h)
-	}
+	// h, err := os.Hostname()
+	// if err == nil {
+	// 	host = shortHostname(h)
+	// }
 
-	current, err := user.Current()
-	if err == nil {
-		userName = current.Username
-	}
+	// current, err := user.Current()
+	// if err == nil {
+	// 	userName = current.Username
+	// }
 
-	// Sanitize userName since it may contain filepath separators on Windows.
-	userName = strings.Replace(userName, `\`, "_", -1)
+	// // Sanitize userName since it may contain filepath separators on Windows.
+	// userName = strings.Replace(userName, `\`, "_", -1)
 }
 
 // shortHostname returns its argument, truncating at the first period.
@@ -81,10 +80,8 @@ func shortHostname(hostname string) string {
 // logName returns a new log file name containing tag, with start time t, and
 // the name for the symlink for tag.
 func logName(tag string, t time.Time) (name, link string) {
-	name = fmt.Sprintf("%s.%s.%s.log.%s.%04d%02d%02d-%02d%02d%02d.%d",
+	name = fmt.Sprintf("%s.%s.%04d%02d%02d-%02d%02d%02d.%d.log",
 		program,
-		host,
-		userName,
 		tag,
 		t.Year(),
 		t.Month(),
