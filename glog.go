@@ -458,7 +458,7 @@ func loadConfig() {
 		return
 	}
 
-	if logConfig.ErrorLevel < numSeverity && logConfig.ErrorLevel > 0 {
+	if logConfig.ErrorLevel <= numSeverity && logConfig.ErrorLevel > 0 {
 		logging.stderrThreshold = logConfig.ErrorLevel - 1
 	}
 
