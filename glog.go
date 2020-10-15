@@ -790,7 +790,7 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 	}
 	data := buf.Bytes()
 	if !flag.Parsed() {
-		os.Stderr.Write([]byte("ERROR: logging before flag.Parse: use default way to log"))
+		os.Stdout.Write([]byte("ERROR: logging before flag.Parse: use default way to log\n"))
 	}
 
 	if l.toStderr {
