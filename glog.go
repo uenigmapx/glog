@@ -780,6 +780,8 @@ func (l *loggingT) printWithFileLine(s severity, file string, line int, alsoToSt
 	l.output(s, buf, file, line, alsoToStderr)
 }
 
+var isFirstRun = true
+
 // output writes the data to the log files and releases the buffer.
 func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoToStderr bool) {
 	l.mu.Lock()
@@ -789,7 +791,8 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 		}
 	}
 	data := buf.Bytes()
-	if !flag.Parsed() {
+	if !isFirstRun && !flag.Parsed() {
+		isFirstRun = false
 		os.Stdout.Write([]byte("ERROR: logging before flag.Parse: use default way to log\n"))
 	}
 
