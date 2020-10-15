@@ -442,9 +442,10 @@ type flushSyncWriter interface {
 }
 
 var logConfig struct {
-	ErrorLevel severity `json:"error_level,omitempty"`
-	LogDir     string   `json:"log_dir,omitempty"`
-	KeepBig    bool     `json:"keep_big,omitempty"`
+	ErrorLevel     severity `json:"error_level,omitempty"`
+	LogDir         string   `json:"log_dir,omitempty"`
+	KeepBig        bool     `json:"keep_big,omitempty"`
+	ShowWithStdout bool     `json:"show_with_stdout,omitempty"`
 }
 
 func loadConfig() {
@@ -467,6 +468,12 @@ func loadConfig() {
 	}
 
 	logging.keepBigFile = !logConfig.KeepBig
+
+	if logConfig.ShowWithStdout {
+		logging.logout = os.Stdout
+	} else {
+		logging.logout = os.Stderr
+	}
 }
 
 func init() {
@@ -482,6 +489,8 @@ func init() {
 	flag.Var(&logCompress, "logcompress", "压缩记录文件 <compress method(zip/gzip/none[default])>")
 	flag.Var(&logCountPerCompress, "logcountpercompress", "执行压缩需要的'最少'文件数<default is 0>")
 	flag.BoolVar(&logging.keepBigFile, "keepbig", false, "是否保留过大的日志（超过100MB）(false[default],true)")
+
+	logging.logout = os.Stderr
 
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
@@ -554,6 +563,10 @@ type loggingT struct {
 
 	// keepBigFile is the state whether to keep big file
 	keepBigFile bool
+
+	// logging way
+	logout         *os.File
+	showWithStderr bool
 }
 
 // buffer holds a byte Buffer for reuse. The zero value is ready for use.
