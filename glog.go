@@ -444,8 +444,8 @@ type flushSyncWriter interface {
 var logConfig struct {
 	ErrorLevel     severity `json:"error_level,omitempty"`
 	LogDir         string   `json:"log_dir,omitempty"`
-	KeepBig        bool     `json:"keep_big,omitempty"`
-	ShowWithStdout bool     `json:"show_with_stdout,omitempty"`
+	KeepBig        string   `json:"keep_big,omitempty"`
+	ShowWithStdout string   `json:"show_with_stdout,omitempty"`
 }
 
 func loadConfig() {
@@ -467,11 +467,11 @@ func loadConfig() {
 		*logDir = logConfig.LogDir
 	}
 
-	logging.keepBigFile = !logConfig.KeepBig
+	logging.keepBigFile = logConfig.KeepBig == "true"
 
-	if logConfig.ShowWithStdout {
+	if logConfig.ShowWithStdout == "true" {
 		logging.logout = os.Stdout
-	} else {
+	} else if logConfig.ShowWithStdout == "false" {
 		logging.logout = os.Stderr
 	}
 }
@@ -490,7 +490,7 @@ func init() {
 	flag.Var(&logCountPerCompress, "logcountpercompress", "执行压缩需要的'最少'文件数<default is 0>")
 	flag.BoolVar(&logging.keepBigFile, "keepbig", false, "是否保留过大的日志（超过100MB）(false[default],true)")
 
-	logging.logout = os.Stderr
+	logging.logout = os.Stdout
 
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
@@ -810,14 +810,14 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 	}
 
 	if l.toStderr {
-		os.Stderr.Write(data)
+		logging.logout.Write(data)
 	} else {
 		if alsoToStderr || l.alsoToStderr || s >= l.stderrThreshold.get() {
-			os.Stderr.Write(data)
+			logging.logout.Write(data)
 		}
 		if l.file[s] == nil {
 			if err := l.createFiles(s); err != nil {
-				os.Stderr.Write(data) // Make sure the message appears somewhere.
+				logging.logout.Write(data) // Make sure the message appears somewhere.
 				l.exit(err)
 			}
 		}
