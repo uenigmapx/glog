@@ -492,8 +492,8 @@ func init() {
 
 	logging.logout = os.Stdout
 
-	// Default stderrThreshold is ERROR.
-	logging.stderrThreshold = errorLog
+	// Default stderrThreshold is Warning.
+	logging.stderrThreshold = warningLog
 
 	// Default outputSeverity is INFO.
 	outputSeverity = infoLog
