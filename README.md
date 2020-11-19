@@ -16,7 +16,24 @@ glog
 8. 添加压缩标准(-logcountpercompress), 当前以 文件数 关联, 开启后超过一定的文件数会自动压缩归档(TODO: 按照 log 文件名进行归档)
 9. 当日志过大时清空日志，防止占满硬盘空间，可通过选项(--keepbig)，可选为(true,false[default])
 10. 未使用flag.Parse()时，提示并保持文件输出
-11. 可通过(log.json)配置(log_dir,error_level,keep_big)
+11. 增加配置文件配置日志记录, 优先级小于命令行参数
+
+## 配置文件格式(log.json)
+
+```json
+{
+      // display level: 1(debug), 2(info), 3(warning), 4(error[default]), 5(fatal)
+      "error_threshold": 0,
+      // 文件记录等级: 1(debug), 2(info[default]), 3(warning), 4(error), 5(fatal)
+      "output_severity": 0,
+      // 日志路径, 默认临时文件夹
+      "log_dir": "/tmp",
+      // 是否保留大文件, 默认false
+      "keep_big": "false",
+      // 显示输出通道, (stdout[default], stderr)
+      "display_channel": "stdout",
+}
+```
 
 ## 使用示例
 

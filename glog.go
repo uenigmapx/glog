@@ -442,10 +442,11 @@ type flushSyncWriter interface {
 }
 
 var logConfig struct {
-	ErrorLevel     severity `json:"error_level,omitempty"`
+	ErrorThreshold severity `json:"error_threshold,omitempty"`
+	OutputSeverity severity `json:"output_severity,omitempty"`
 	LogDir         string   `json:"log_dir,omitempty"`
 	KeepBig        string   `json:"keep_big,omitempty"`
-	ShowWithStdout string   `json:"show_with_stdout,omitempty"`
+	DisplayChannel string   `json:"display_channel,omitempty"`
 }
 
 func loadConfig() {
@@ -459,20 +460,29 @@ func loadConfig() {
 		return
 	}
 
-	if logConfig.ErrorLevel <= numSeverity && logConfig.ErrorLevel > 0 {
-		logging.stderrThreshold = logConfig.ErrorLevel - 1
+	if logConfig.ErrorThreshold <= numSeverity && logConfig.ErrorThreshold > 0 {
+		logging.stderrThreshold = logConfig.ErrorThreshold - 1
+	}
+
+	if logConfig.OutputSeverity.get() <= numSeverity && logConfig.OutputSeverity > 0 {
+		outputSeverity = logConfig.OutputSeverity.get() - 1
 	}
 
 	if logConfig.LogDir != "" {
 		*logDir = logConfig.LogDir
 	}
 
-	logging.keepBigFile = logConfig.KeepBig == "true"
+	// logging.keepBigFile = logConfig.KeepBig == "true"
+	if logConfig.KeepBig == "true" {
+		logging.keepBigFile = true
+	} else if logConfig.KeepBig == "false" {
+		logging.keepBigFile = false
+	}
 
-	if logConfig.ShowWithStdout == "true" {
-		logging.logout = os.Stdout
-	} else if logConfig.ShowWithStdout == "false" {
-		logging.logout = os.Stderr
+	if logConfig.DisplayChannel == "stderr" {
+		logging.displayIOWriter = os.Stderr
+	} else if logConfig.DisplayChannel == "stdout" {
+		logging.displayIOWriter = os.Stdout
 	}
 }
 
@@ -490,10 +500,10 @@ func init() {
 	flag.Var(&logCountPerCompress, "logcountpercompress", "执行压缩需要的'最少'文件数<default is 0>")
 	flag.BoolVar(&logging.keepBigFile, "keepbig", false, "是否保留过大的日志（超过100MB）(false[default],true)")
 
-	logging.logout = os.Stdout
+	logging.displayIOWriter = os.Stdout
 
-	// Default stderrThreshold is Warning.
-	logging.stderrThreshold = warningLog
+	// Default stderrThreshold is errorLog.
+	logging.stderrThreshold = errorLog
 
 	// Default outputSeverity is INFO.
 	outputSeverity = infoLog
@@ -564,9 +574,9 @@ type loggingT struct {
 	// keepBigFile is the state whether to keep big file
 	keepBigFile bool
 
-	// logging way
-	logout         *os.File
-	showWithStderr bool
+	// display channel
+	displayIOWriter io.Writer
+	showWithStderr  bool
 }
 
 // buffer holds a byte Buffer for reuse. The zero value is ready for use.
@@ -806,18 +816,18 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 	data := buf.Bytes()
 	if !isFirstRun && !flag.Parsed() {
 		isFirstRun = false
-		os.Stdout.Write([]byte("ERROR: logging before flag.Parse: use default way to log\n"))
+		logging.displayIOWriter.Write([]byte("ERROR: logging before flag.Parse: use default way to log\n"))
 	}
 
 	if l.toStderr {
-		logging.logout.Write(data)
+		logging.displayIOWriter.Write(data)
 	} else {
 		if alsoToStderr || l.alsoToStderr || s >= l.stderrThreshold.get() {
-			logging.logout.Write(data)
+			logging.displayIOWriter.Write(data)
 		}
 		if l.file[s] == nil {
 			if err := l.createFiles(s); err != nil {
-				logging.logout.Write(data) // Make sure the message appears somewhere.
+				logging.displayIOWriter.Write(data) // Make sure the message appears somewhere.
 				l.exit(err)
 			}
 		}
