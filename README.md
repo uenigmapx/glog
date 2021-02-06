@@ -22,10 +22,10 @@ glog
 
 ```json
 {
-      // display level: 1(debug), 2(info), 3(warning), 4(error[default]), 5(fatal)
-      "error_threshold": 0,
-      // 文件记录等级: 1(debug), 2(info[default]), 3(warning), 4(error), 5(fatal)
-      "output_severity": 0,
+      // display level: debug, info, warning, error[default], fatal
+      "display_level": "error",
+      // 文件记录等级: debug, info[default], warning, error, fatal
+      "output_severity": "info",
       // 日志路径, 默认临时文件夹
       "log_dir": "/tmp",
       // 是否保留大文件, 默认false

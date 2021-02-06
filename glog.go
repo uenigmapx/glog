@@ -441,18 +441,27 @@ type flushSyncWriter interface {
 	io.Writer
 }
 
-var logConfig struct {
-	ErrorThreshold severity `json:"error_threshold,omitempty"`
-	OutputSeverity severity `json:"output_severity,omitempty"`
-	LogDir         string   `json:"log_dir,omitempty"`
-	KeepBig        string   `json:"keep_big,omitempty"`
-	DisplayChannel string   `json:"display_channel,omitempty"`
+type logConfig struct {
+	DisplayLevel   string `json:"display_level,omitempty"`
+	OutputLevel    string `json:"output_level,omitempty"`
+	LogDir         string `json:"log_dir,omitempty"`
+	KeepBig        string `json:"keep_big,omitempty"`
+	DisplayChannel string `json:"display_channel,omitempty"`
 }
 
 func loadConfig() {
+	var logConfig logConfig
 	bs, err := ioutil.ReadFile("log.json")
 	if err != nil {
 		return
+	}
+
+	var errorMap = map[string]severity{
+		"debug":   debugLog,
+		"info":    infoLog,
+		"warning": warningLog,
+		"error":   errorLog,
+		"fatal":   fatalLog,
 	}
 
 	err = json.Unmarshal(bs, &logConfig)
@@ -460,12 +469,14 @@ func loadConfig() {
 		return
 	}
 
-	if logConfig.ErrorThreshold <= numSeverity && logConfig.ErrorThreshold > 0 {
-		logging.stderrThreshold = logConfig.ErrorThreshold - 1
+	if r, ok := errorMap[logConfig.DisplayLevel]; ok {
+		logging.stderrThreshold = r
+		fmt.Println("error", logConfig.DisplayLevel)
 	}
 
-	if logConfig.OutputSeverity.get() <= numSeverity && logConfig.OutputSeverity > 0 {
-		outputSeverity = logConfig.OutputSeverity.get() - 1
+	if r, ok := errorMap[logConfig.OutputLevel]; ok {
+		outputSeverity = r
+		fmt.Println("output", logConfig.OutputLevel)
 	}
 
 	if logConfig.LogDir != "" {

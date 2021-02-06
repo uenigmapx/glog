@@ -41,6 +41,15 @@ func TestShortHostname(t *testing.T) {
 	}
 }
 
+func TestTotal(t *testing.T) {
+	Debug("debug")
+	Info("info")
+	Warning("warning")
+	Error("error")
+	// Fatal("fatal")
+	Flush()
+}
+
 // flushBuffer wraps a bytes.Buffer to satisfy flushSyncWriter.
 type flushBuffer struct {
 	bytes.Buffer
