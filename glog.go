@@ -471,12 +471,10 @@ func loadConfig() {
 
 	if r, ok := errorMap[logConfig.DisplayLevel]; ok {
 		logging.stderrThreshold = r
-		fmt.Println("error", logConfig.DisplayLevel)
 	}
 
 	if r, ok := errorMap[logConfig.OutputLevel]; ok {
 		outputSeverity = r
-		fmt.Println("output", logConfig.OutputLevel)
 	}
 
 	if logConfig.LogDir != "" {
