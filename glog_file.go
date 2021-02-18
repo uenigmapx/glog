@@ -110,9 +110,9 @@ func create(tag string, t time.Time) (f *os.File, filename string, err error) {
 		fname := filepath.Join(dir, name)
 		f, err := os.Create(fname)
 		if err == nil {
-			symlink := filepath.Join(dir, link)
-			os.Remove(symlink)        // ignore err
-			os.Symlink(name, symlink) // ignore err
+			// symlink := filepath.Join(dir, link)
+			// os.Remove(symlink)        // ignore err
+			// os.Symlink(name, symlink) // ignore err
 			return f, fname, nil
 		}
 		lastErr = err
