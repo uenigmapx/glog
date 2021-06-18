@@ -25,7 +25,7 @@ glog
       // display level: debug, info, warning, error[default], fatal
       "display_level": "error",
       // 文件记录等级: debug, info[default], warning, error, fatal
-      "output_severity": "info",
+      "output_level": "info",
       // 日志路径, 默认临时文件夹
       "log_dir": "/tmp",
       // 是否保留大文件, 默认false
